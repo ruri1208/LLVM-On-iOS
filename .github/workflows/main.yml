@@ -8,7 +8,6 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v3
-      - run: ./build-tools.sh
       - run: |
           mkdir -p tools/bin
           curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
