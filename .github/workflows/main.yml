@@ -6,14 +6,17 @@ on:
 jobs:
   prepare-build-tools:
     runs-on: macos-latest
-    if: ${{ false }}
     steps:
       - uses: actions/checkout@v3
       - run: ./build-tools.sh
       - run: |
-          curl -OL https://github.com/ninja-build/ninja/releases/download/v1.10.2/ninja-mac.zip
-          unzip ninja-mac.zip
-          mv ninja tools/bin
+          mkdir -p tools/bin
+          curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/ninja-build/ninja/actions/runs/30174578673/artifacts" \
+            | jq -r '.artifacts[] | select(.name=="ninja") | .archive_download_url' \
+            | xargs curl -L -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -o ninja-mac.zip
+          unzip -o ninja-mac.zip -d tools/bin
+          chmod +x tools/bin/ninja
       - run: tar -cJf tools.tar.xz tools/
       - uses: actions/upload-artifact@v4
         with:
@@ -21,6 +24,7 @@ jobs:
           path: tools.tar.xz
 
   build-llvm:
+    needs: prepare-build-tools
     runs-on: macos-latest
     timeout-minutes: 1200
     steps:
