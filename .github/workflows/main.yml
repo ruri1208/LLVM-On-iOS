@@ -1,32 +1,55 @@
 name: Build LLVM XCFrameworks for Release
+
 on:
   push:
   workflow_dispatch:
 
 jobs:
   prepare-build-tools:
-    runs-on: macos-latest
+    runs-on: macos-15
+
     steps:
       - uses: actions/checkout@v3
+
+      - name: Show available Xcodes
+        run: |
+          echo "===== Installed Xcodes ====="
+          ls /Applications | grep Xcode || true
+          echo
+          xcodebuild -version || true
+
+      - name: Select Xcode (prefer 26.0)
+        run: |
+          if [ -d /Applications/Xcode_26.0.app ]; then
+            sudo xcode-select -s /Applications/Xcode_26.0.app/Contents/Developer
+          fi
+
+          echo "===== Current Xcode ====="
+          xcodebuild -version
+          echo
+          echo "===== SDK ====="
+          xcrun --sdk iphoneos --show-sdk-version
+          echo
+          echo "===== Clang ====="
+          clang --version
+
       - run: |
           mkdir -p tools/bin
 
-          
-          curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+          curl -s \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
             "https://api.github.com/repos/ninja-build/ninja/actions/runs/30174578673/artifacts" \
-            | jq -r '.artifacts[] | select(.name=="ninja-binary-archives") | .archive_download_url' \
-            | xargs curl -L -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -o outer.zip
+          | jq -r '.artifacts[] | select(.name=="ninja-binary-archives") | .archive_download_url' \
+          | xargs curl -L \
+              -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+              -o outer.zip
 
-          
           unzip -o outer.zip
-
-          
           unzip -o ninja-mac.zip -d tools/bin
-
-          
           chmod +x tools/bin/ninja
 
       - run: tar -cJf tools.tar.xz tools/
+
       - uses: actions/upload-artifact@v4
         with:
           name: tools
@@ -34,22 +57,45 @@ jobs:
 
   build-llvm:
     needs: prepare-build-tools
-    runs-on: macos-latest
+
+    runs-on: macos-15
+
     timeout-minutes: 1200
+
     steps:
       - uses: actions/checkout@v3
         with:
           submodules: true
+
+      - name: Select Xcode (prefer 26.0)
+        run: |
+          if [ -d /Applications/Xcode_26.0.app ]; then
+            sudo xcode-select -s /Applications/Xcode_26.0.app/Contents/Developer
+          fi
+
+          echo "===== Current Xcode ====="
+          xcodebuild -version
+          echo
+          echo "===== SDK ====="
+          xcrun --sdk iphoneos --show-sdk-version
+          echo
+          echo "===== Clang ====="
+          clang --version
+
       - run: |
           make all
+
       - name: create LLVM.xcframework archive
         run: tar -cJf LLVM.xcframework.tar.xz LLVM.xcframework
+
       - name: create CoreCompilerSupportLibs archive
         run: tar -cJf CoreCompilerSupportLibs.tar.xz CoreCompilerSupportLibs
+
       - uses: actions/upload-artifact@v4
         with:
           name: LLVM.xcframework
           path: LLVM.xcframework.tar.xz
+
       - uses: actions/upload-artifact@v4
         with:
           name: CoreCompilerSupportLibs
