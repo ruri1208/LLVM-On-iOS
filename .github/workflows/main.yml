@@ -13,8 +13,8 @@ jobs:
           curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
             "https://api.github.com/repos/ninja-build/ninja/actions/runs/30174578673/artifacts" \
             | jq -r '.artifacts[] | select(.name=="ninja") | .archive_download_url' \
-            | xargs curl -L -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -o ninja-mac.zip
-          unzip -o ninja-mac.zip -d tools/bin
+            | xargs curl -L -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -o ninja-binary-archives.zip
+          unzip -o ninja-binary-archives.zip -d tools/bin
           chmod +x tools/bin/ninja
       - run: tar -cJf tools.tar.xz tools/
       - uses: actions/upload-artifact@v4
