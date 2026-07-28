@@ -6,7 +6,7 @@ on:
 
 jobs:
   prepare-build-tools:
-    runs-on: macos-15
+    runs-on: macos-26
 
     steps:
       - uses: actions/checkout@v3
@@ -20,8 +20,8 @@ jobs:
 
       - name: Select Xcode (prefer 26.0)
         run: |
-          if [ -d /Applications/Xcode_26.0.app ]; then
-            sudo xcode-select -s /Applications/Xcode_26.0.app/Contents/Developer
+          if [ -d /Applications/Xcode_26.1.app ]; then
+            sudo xcode-select -s /Applications/Xcode_26.1.app/Contents/Developer
           fi
 
           echo "===== Current Xcode ====="
@@ -58,7 +58,7 @@ jobs:
   build-llvm:
     needs: prepare-build-tools
 
-    runs-on: macos-15
+    runs-on: macos-26
 
     timeout-minutes: 1200
 
@@ -69,8 +69,8 @@ jobs:
 
       - name: Select Xcode (prefer 26.0)
         run: |
-          if [ -d /Applications/Xcode_26.0.app ]; then
-            sudo xcode-select -s /Applications/Xcode_26.0.app/Contents/Developer
+          if [ -d /Applications/Xcode_26.1.app ]; then
+            sudo xcode-select -s /Applications/Xcode_26.1.app/Contents/Developer
           fi
 
           echo "===== Current Xcode ====="
