@@ -1,4 +1,3 @@
-# Quick configurations
 ROOT := $(PWD)
 OS_VER ?= 16.0
 LLVM_ARCH := AArch64
@@ -9,15 +8,12 @@ SWIFT_SOURCE_DIR ?= swift
 SWIFT_TOOLCHAIN_ZIP := SwiftToolchain.zip
 SWIFT_TOOLCHAIN_ROOT ?= SwiftToolchain-iphoneos
 
-# Helper function
 define log_info
 	@echo "\033[32m\033[1m[*] \033[0m\033[32m$(1)\033[0m"
 endef
 
-# Main Target
 all: LLVM.xcframework
 
-# Fetch & Build Swift and LLVM for iOS
 swift:
 	$(call log_info,fetching swift sources ($(SWIFT_BRANCH)))
 	SWIFT_BRANCH="$(SWIFT_BRANCH)" SWIFT_SOURCE_DIR="$(SWIFT_SOURCE_DIR)" Scripts/build-swift-toolchain.sh fetch
@@ -43,7 +39,6 @@ install-nyxian-swift-toolchain: $(SWIFT_TOOLCHAIN_ZIP)
 verify-swift-toolchain:
 	Scripts/build-swift-toolchain.sh verify-host
 
-# Bundle
 SDK = $(shell xcrun --sdk iphoneos --show-sdk-path)
 SWIFT_STATIC_LIBS = $(wildcard $(SWIFT_TOOLCHAIN_ROOT)/lib/libswift*.a) \
                     $(wildcard $(SWIFT_TOOLCHAIN_ROOT)/lib/lib_CompilerRegexParser.a) \
@@ -71,7 +66,6 @@ LLVM.xcframework: swift-toolchain
 	cp -r build/LLVMClangSwift_iphoneos/llvm-iphoneos-arm64/tools/clang/include/* Headers/
 	rm -rf Headers/swift/Bridging
 	cp -r swift/include/swift Headers/
-	mkdir -p Headers/swift/shims
 	cp -r swift/stdlib/public/SwiftShims/* Headers/swift/shims/
 	$(call log_info,create llvm.a)
 	-rm -rf llvm.a
@@ -80,7 +74,6 @@ LLVM.xcframework: swift-toolchain
 	-rm -rf LLVM.xcframework
 	xcodebuild -create-xcframework -library "./llvm.a" -headers "Headers" -output LLVM.xcframework
 
-# Cleanup
 clean-artifacts:
 	-rm -f *.o llvm.a
 	-rm -rf CoreCompilerSupportLibs
