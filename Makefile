@@ -62,23 +62,20 @@ LLVM.xcframework: swift-toolchain
 	$(call log_info,bundling LLVM xcframework headers)
 	-rm -rf Headers
 	mkdir -p Headers
-	
 	cp -r SwiftToolchain-iphoneos/include/* Headers/
 	cp -r llvm-project/lld/include/lld Headers/
 	cp -r llvm-project/clang/include/clang Headers/
+	cp -r llvm-project/clang/include/clang-c Headers/
 	cp -r llvm-project/llvm/include/llvm Headers/
+	cp -r llvm-project/llvm/include/llvm-c Headers/
 	cp -r build/LLVMClangSwift_iphoneos/llvm-iphoneos-arm64/tools/clang/include/* Headers/
-	
 	rm -rf Headers/swift/Bridging
 	cp -r swift/include/swift Headers/
-	
 	mkdir -p Headers/swift/shims
 	cp -r swift/stdlib/public/SwiftShims/* Headers/swift/shims/
-	
 	$(call log_info,create llvm.a)
 	-rm -rf llvm.a
 	libtool -static -o llvm.a $(SWIFT_STATIC_LIBS)
-	
 	$(call log_info,bundling LLVM xcframework)
 	-rm -rf LLVM.xcframework
 	xcodebuild -create-xcframework -library "./llvm.a" -headers "Headers" -output LLVM.xcframework
