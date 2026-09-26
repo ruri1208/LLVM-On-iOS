@@ -65,7 +65,9 @@ LLVM.xcframework: swift-toolchain
 	cp -r llvm-project/llvm/include/llvm-c Headers/
 	cp -r build/LLVMClangSwift_iphoneos/llvm-iphoneos-arm64/tools/clang/include/* Headers/
 	rm -rf Headers/swift/Bridging
-	cp -r swift/include/swift Headers/
+	mkdir -p Headers/swift
+	cp -r swift/include/swift/* Headers/swift/
+	mkdir -p Headers/swift/shims
 	cp -r swift/stdlib/public/SwiftShims/* Headers/swift/shims/
 	$(call log_info,create llvm.a)
 	-rm -rf llvm.a
