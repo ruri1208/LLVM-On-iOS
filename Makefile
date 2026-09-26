@@ -1,25 +1,30 @@
+# Quick configurations
 ROOT := $(PWD)
 OS_VER ?= 16.0
 LLVM_ARCH := AArch64
 APPLE_ARCH := arm64
 TARGET_TRIPLE := $(APPLE_ARCH)-apple-ios$(OS_VER)
-SWIFT_BRANCH ?= swift-6.4.0-RELEASE
+SWIFT_BRANCH ?= swift-6.3.3-RELEASE
 SWIFT_SOURCE_DIR ?= swift
 SWIFT_TOOLCHAIN_ZIP := SwiftToolchain.zip
 SWIFT_TOOLCHAIN_ROOT ?= SwiftToolchain-iphoneos
 
+# Helper function
 define log_info
 	@echo "\033[32m\033[1m[*] \033[0m\033[32m$(1)\033[0m"
 endef
 
+# Main Target
 all: LLVM.xcframework
 
+# Fetch & Build Swift and LLVM for iOS
 swift:
 	$(call log_info,fetching swift sources ($(SWIFT_BRANCH)))
 	SWIFT_BRANCH="$(SWIFT_BRANCH)" SWIFT_SOURCE_DIR="$(SWIFT_SOURCE_DIR)" Scripts/build-swift-toolchain.sh fetch
 	$(call log_info,bypassing lld darwin incompatibility)
 	perl -i -0pe 's|(// Swift LLVM fork downstream change start\n)(.*?)(// Swift LLVM fork downstream change end\n)|$$1/* NYXIAN: apple lies, lld works fine for MachO\n$$2*/\n$$3|s' \
 	llvm-project/lld/MachO/InputFiles.cpp
+
 
 .SwiftToolchain-iphoneos: swift
 	$(call log_info,building iOS-native swift toolchain ($(SWIFT_BRANCH)))
@@ -39,6 +44,7 @@ install-nyxian-swift-toolchain: $(SWIFT_TOOLCHAIN_ZIP)
 verify-swift-toolchain:
 	Scripts/build-swift-toolchain.sh verify-host
 
+# Bundle
 SDK = $(shell xcrun --sdk iphoneos --show-sdk-path)
 SWIFT_STATIC_LIBS = $(wildcard $(SWIFT_TOOLCHAIN_ROOT)/lib/libswift*.a) \
                     $(wildcard $(SWIFT_TOOLCHAIN_ROOT)/lib/lib_CompilerRegexParser.a) \
@@ -50,25 +56,22 @@ SWIFT_STATIC_LIBS = $(wildcard $(SWIFT_TOOLCHAIN_ROOT)/lib/libswift*.a) \
 SWIFT_HOST_COMPILER_DYLIBS = $(wildcard $(SWIFT_TOOLCHAIN_ROOT)/lib/swift/host/compiler/lib_Compiler*.dylib)
 
 LLVM.xcframework: swift-toolchain
+LLVM.xcframework:
 	$(call log_info,bundling CoreCompilerSupportLibs)
 	-rm -rf CoreCompilerSupportLibs
-	mkdir -p CoreCompilerSupportLibs
-	if [ -n "$(SWIFT_HOST_COMPILER_DYLIBS)" ]; then cp $(SWIFT_HOST_COMPILER_DYLIBS) CoreCompilerSupportLibs/; fi
+	mkdir CoreCompilerSupportLibs
+	cp $(SWIFT_HOST_COMPILER_DYLIBS) CoreCompilerSupportLibs/
 	$(call log_info,bundling LLVM xcframework headers)
 	-rm -rf Headers
-	mkdir -p Headers
+	mkdir Headers
 	cp -r SwiftToolchain-iphoneos/include/* Headers/
-	cp -r llvm-project/lld/include/lld Headers/
-	cp -r llvm-project/clang/include/clang Headers/
-	cp -r llvm-project/clang/include/clang-c Headers/
-	cp -r llvm-project/llvm/include/llvm Headers/
-	cp -r llvm-project/llvm/include/llvm-c Headers/
+	cp -r llvm-project/lld/include/* Headers/
+	cp -r llvm-project/clang/include/* Headers/
+	cp -r llvm-project/llvm/include/* Headers/
 	cp -r build/LLVMClangSwift_iphoneos/llvm-iphoneos-arm64/tools/clang/include/* Headers/
 	rm -rf Headers/swift/Bridging
-	mkdir -p Headers/swift
-	cp -r swift/include/swift/* Headers/swift/
-	mkdir -p Headers/swift/shims
-	cp -r swift/stdlib/public/SwiftShims/* Headers/swift/shims/
+	cp -r swift/include/* Headers/
+	cp -r swift/stdlib/public/SwiftShims/* Headers/
 	$(call log_info,create llvm.a)
 	-rm -rf llvm.a
 	libtool -static -o llvm.a $(SWIFT_STATIC_LIBS)
@@ -76,8 +79,9 @@ LLVM.xcframework: swift-toolchain
 	-rm -rf LLVM.xcframework
 	xcodebuild -create-xcframework -library "./llvm.a" -headers "Headers" -output LLVM.xcframework
 
+# Cleanup
 clean-artifacts:
-	-rm -f *.o llvm.a
+	-rm *.o
 	-rm -rf CoreCompilerSupportLibs
 	-rm -rf LLVM.xcframework
 	-rm -rf Headers
