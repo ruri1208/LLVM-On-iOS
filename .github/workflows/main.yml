@@ -38,7 +38,7 @@ jobs:
 
           curl -s \
             -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            "https://api.github.com/repos/ninja-build/ninja/actions/runs/30174578673/artifacts" \
+            "https://api.github.com/repos/ninja-build/ninja/actions/runs/36058881882/artifacts" \
           | jq -r '.artifacts[] | select(.name=="ninja-binary-archives") | .archive_download_url' \
           | xargs curl -L \
               -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
